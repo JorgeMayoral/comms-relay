@@ -1,0 +1,7 @@
+[tasks.server]
+description = "Run server"
+run = "cargo run --bin relay"
+
+[tasks.client]
+description = "Run client"
+run = "cargo run --bin uplink"

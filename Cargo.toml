@@ -1,0 +1,25 @@
+[package]
+name = "comms-relay"
+version = "0.1.0"
+edition = "2024"
+
+[[bin]]
+name = "relay"
+path = "./src/bin/relay/main.rs"
+
+[[bin]]
+name = "uplink"
+path = "./src/bin/uplink/main.rs"
+
+[lib]
+name = "comms"
+path = "./src/lib/mod.rs"
+
+[dependencies]
+anyhow = "1.0.102"
+axum = { version = "0.8.8", features = ["macros"] }
+serde = { version = "1.0.228", features = ["derive"] }
+tokio = { version = "1.50.0", features = ["full"] }
+
+[lints.clippy]
+pedantic = "deny"
