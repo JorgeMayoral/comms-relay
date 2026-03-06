@@ -19,7 +19,6 @@ path = "./src/lib/mod.rs"
 anyhow = "1.0.102"
 axum = { version = "0.8.8", features = ["macros"] }
 jiff = { version = "0.2.23", features = ["serde"] }
-log = "0.4.29"
 serde = { version = "1.0.228", features = ["derive"] }
 tokio = { version = "1.50.0", features = ["full"] }
 tower = "0.5.3"

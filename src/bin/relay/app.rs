@@ -28,7 +28,6 @@ impl Default for AppState {
 }
 
 pub fn app(state: AppState) -> Router {
-    telemetry::init_tracing();
     let tracing_layer = telemetry::get_tracing_layer();
 
     Router::new()

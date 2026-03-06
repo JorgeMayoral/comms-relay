@@ -118,7 +118,6 @@ dependencies = [
  "anyhow",
  "axum",
  "jiff",
- "log",
  "serde",
  "tokio",
  "tower",
