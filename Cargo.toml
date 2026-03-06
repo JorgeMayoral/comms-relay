@@ -18,8 +18,15 @@ path = "./src/lib/mod.rs"
 [dependencies]
 anyhow = "1.0.102"
 axum = { version = "0.8.8", features = ["macros"] }
+jiff = { version = "0.2.23", features = ["serde"] }
+log = "0.4.29"
 serde = { version = "1.0.228", features = ["derive"] }
 tokio = { version = "1.50.0", features = ["full"] }
+tower = "0.5.3"
+tower-http = { version = "0.6.8", features = ["trace"] }
+tracing = "0.1.44"
+tracing-subscriber = { version = "0.3.22", features = ["env-filter"] }
+ulid = { version = "1.2.1", features = ["serde"] }
 
 [lints.clippy]
 pedantic = "deny"

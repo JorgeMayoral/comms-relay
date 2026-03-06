@@ -1,12 +1,14 @@
+use jiff::{Timestamp, Zoned, tz::TimeZone};
 use serde::{Deserialize, Serialize};
+use ulid::Ulid;
 
 use crate::payloads::PublicationRequest;
 
 #[derive(Debug, Clone, Serialize, Deserialize)]
 pub struct Publication {
-    id: String,
+    id: Ulid,
     content: String,
-    pub_date: String,
+    pub_date: Zoned,
     mastodon_url: Option<String>,
     bluesky_url: Option<String>,
 }
@@ -14,9 +16,9 @@ pub struct Publication {
 impl Publication {
     #[must_use]
     pub fn new(
-        id: String,
+        id: Ulid,
         content: String,
-        pub_date: String,
+        pub_date: Zoned,
         mastodon_url: Option<String>,
         bluesky_url: Option<String>,
     ) -> Self {
@@ -30,19 +32,15 @@ impl Publication {
     }
 
     #[must_use]
-    pub fn id(&self) -> &str {
+    pub fn id(&self) -> &Ulid {
         &self.id
     }
 }
 
 impl From<PublicationRequest> for Publication {
     fn from(value: PublicationRequest) -> Self {
-        Self::new(
-            "some_id".to_owned(),
-            value.content,
-            "some_date".to_owned(),
-            None,
-            None,
-        )
+        let id = Ulid::new();
+        let pub_date = Timestamp::now().to_zoned(TimeZone::UTC);
+        Self::new(id, value.content, pub_date, None, None)
     }
 }
