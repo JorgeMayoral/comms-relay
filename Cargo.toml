@@ -20,6 +20,7 @@ anyhow = "1.0.102"
 axum = { version = "0.8.8", features = ["macros"] }
 jiff = { version = "0.2.23", features = ["serde"] }
 serde = { version = "1.0.228", features = ["derive"] }
+sqlx = { version = "0.8.6", features = ["runtime-tokio-rustls", "postgres", "macros", "migrate"] }
 tokio = { version = "1.50.0", features = ["full"] }
 tower = "0.5.3"
 tower-http = { version = "0.6.8", features = ["trace"] }
