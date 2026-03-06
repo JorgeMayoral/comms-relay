@@ -41,6 +41,36 @@ impl Publication {
     pub fn id(&self) -> &Ulid {
         &self.id
     }
+
+    #[must_use]
+    pub fn content(&self) -> &str {
+        &self.content
+    }
+
+    #[must_use]
+    pub fn pub_date(&self) -> &Zoned {
+        &self.pub_date
+    }
+
+    #[must_use]
+    pub fn mastodon_id(&self) -> Option<&str> {
+        self.mastodon_id.as_deref()
+    }
+
+    #[must_use]
+    pub fn mastodon_url(&self) -> Option<&str> {
+        self.mastodon_url.as_deref()
+    }
+
+    #[must_use]
+    pub fn bluesky_id(&self) -> Option<&str> {
+        self.bluesky_id.as_deref()
+    }
+
+    #[must_use]
+    pub fn bluesky_url(&self) -> Option<&str> {
+        self.bluesky_url.as_deref()
+    }
 }
 
 impl From<NewPublicationRequest> for Publication {
