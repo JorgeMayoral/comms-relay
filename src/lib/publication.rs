@@ -2,7 +2,7 @@ use jiff::{Timestamp, Zoned, tz::TimeZone};
 use serde::{Deserialize, Serialize};
 use ulid::Ulid;
 
-use crate::payloads::PublicationRequest;
+use crate::payloads::NewPublicationRequest;
 
 #[derive(Debug, Clone, Serialize, Deserialize)]
 pub struct Publication {
@@ -37,8 +37,8 @@ impl Publication {
     }
 }
 
-impl From<PublicationRequest> for Publication {
-    fn from(value: PublicationRequest) -> Self {
+impl From<NewPublicationRequest> for Publication {
+    fn from(value: NewPublicationRequest) -> Self {
         let id = Ulid::new();
         let pub_date = Timestamp::now().to_zoned(TimeZone::UTC);
         Self::new(id, value.content, pub_date, None, None)
