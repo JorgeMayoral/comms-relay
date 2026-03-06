@@ -6,6 +6,7 @@ use crate::app::AppState;
 
 mod app;
 mod storage;
+mod telemetry;
 
 #[tokio::main]
 async fn main() -> Result<()> {
@@ -15,6 +16,7 @@ async fn main() -> Result<()> {
         .context("create TCP listener")?;
     let state = AppState::default();
     let app = app::app(state);
+    log::info!("Server listening on http://{addr}");
     axum::serve(listener, app).await.context("serve axum app")?;
 
     Ok(())
