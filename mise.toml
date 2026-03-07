@@ -2,6 +2,7 @@
 DATABASE_URL = "postgres://user:password@localhost:5432/relay"
 RUST_LOG = "debug"
 RELAY_API_TOKEN = "25df3e04-276b-4e9b-83b6-0534ad5ce451"
+RELAY_URL = "http://localhost:8000"
 
 [tasks.server]
 description = "Run the relay server"
