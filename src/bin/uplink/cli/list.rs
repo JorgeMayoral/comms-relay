@@ -1,20 +1,17 @@
 use anyhow::{Context, Result};
 use clap::Args;
-use comms::payloads::GetAllPublicationsResponse;
+
+use crate::actions;
 
 #[derive(Debug, Args, Clone)]
 pub struct ListArgs;
 
 impl ListArgs {
     pub async fn exec(&self) -> Result<()> {
-        let response = reqwest::get("http://localhost:8000/publications")
+        let data = actions::get_all_publications()
             .await
-            .context("list all publications")?;
-        let data = response
-            .json::<GetAllPublicationsResponse>()
-            .await
-            .context("deserialize all publications response")?;
-        let json = serde_json::to_string_pretty(&data).context("serialize response as JSON")?;
+            .context("list publications")?;
+        let json = serde_json::to_string_pretty(&data).context("serialize publications as JSON")?;
         println!("{json}");
         Ok(())
     }

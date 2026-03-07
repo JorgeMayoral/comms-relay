@@ -3,6 +3,7 @@ use clap::Parser;
 
 use crate::cli::Cli;
 
+mod actions;
 mod cli;
 
 #[tokio::main]
