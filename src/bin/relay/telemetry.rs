@@ -49,5 +49,9 @@ fn make_span(req: &Request<Body>) -> Span {
 fn on_response(res: &Response<Body>, latency: Duration, span: &Span) {
     let status = res.status().as_u16();
     span.record("status", status);
-    tracing::info!(latency = ?latency, status, "response");
+    match status {
+        500..=599 => tracing::error!(latency = ?latency, status, "response"),
+        400..=499 => tracing::warn!(latency = ?latency, status, "response"),
+        _ => tracing::info!(latency = ?latency, status, "response"),
+    }
 }
