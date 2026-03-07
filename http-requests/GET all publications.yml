@@ -1,0 +1,15 @@
+info:
+  name: GET all publications
+  type: http
+  seq: 1
+
+http:
+  method: GET
+  url: http://localhost:8000/publications
+  auth: inherit
+
+settings:
+  encodeUrl: true
+  timeout: 0
+  followRedirects: true
+  maxRedirects: 5
