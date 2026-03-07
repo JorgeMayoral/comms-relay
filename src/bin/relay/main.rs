@@ -5,6 +5,8 @@ use anyhow::{Context, Result};
 use crate::app::AppState;
 
 mod app;
+mod auth;
+mod error;
 mod storage;
 mod telemetry;
 

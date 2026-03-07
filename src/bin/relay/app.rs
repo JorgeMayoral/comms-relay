@@ -3,9 +3,8 @@ use std::sync::Arc;
 use anyhow::{Context, Result};
 use axum::{
     Json, Router,
-    extract::{FromRequestParts, Path, State},
-    http::{StatusCode, header, request::Parts},
-    response::{IntoResponse, Response},
+    extract::{Path, State},
+    http::StatusCode,
     routing::{get, post},
 };
 use comms::{
@@ -17,15 +16,15 @@ use comms::{
 };
 use ulid::Ulid;
 
-use crate::{storage::PgStorage, telemetry};
+use crate::{auth::BearerAuth, error::AppError, storage::PgStorage, telemetry};
 
-pub struct AppState {
-    pub storage: PgStorage,
-    pub api_token: String,
+pub(crate) struct AppState {
+    pub(crate) storage: PgStorage,
+    pub(crate) api_token: String,
 }
 
 impl AppState {
-    pub async fn new(db_url: &str, api_token: String) -> Result<Self> {
+    pub(crate) async fn new(db_url: &str, api_token: String) -> Result<Self> {
         let storage = PgStorage::create(db_url)
             .await
             .context("create postgres storage")?;
@@ -91,57 +90,4 @@ async fn get_publication(
     };
     let response = publication.map(GetPublicationResponse::from);
     Ok((status, Json(response)))
-}
-
-struct AppError(anyhow::Error);
-
-impl IntoResponse for AppError {
-    fn into_response(self) -> Response {
-        tracing::error!(error = %format_args!("{:#}", self.0), "internal server error");
-        StatusCode::INTERNAL_SERVER_ERROR.into_response()
-    }
-}
-
-impl<E: Into<anyhow::Error>> From<E> for AppError {
-    fn from(err: E) -> Self {
-        AppError(err.into())
-    }
-}
-
-struct BearerAuth;
-
-impl FromRequestParts<Arc<AppState>> for BearerAuth {
-    type Rejection = Response;
-
-    async fn from_request_parts(
-        parts: &mut Parts,
-        state: &Arc<AppState>,
-    ) -> Result<Self, Self::Rejection> {
-        let unauthorized = || {
-            (
-                StatusCode::UNAUTHORIZED,
-                [(header::WWW_AUTHENTICATE, "Bearer")],
-            )
-                .into_response()
-        };
-
-        let Some(value) = parts.headers.get(header::AUTHORIZATION) else {
-            tracing::warn!("missing Authorization header");
-            return Err(unauthorized());
-        };
-        let Ok(value) = value.to_str() else {
-            tracing::warn!("Authorization header is not valid UTF-8");
-            return Err(unauthorized());
-        };
-        let Some(token) = value.strip_prefix("Bearer ") else {
-            tracing::warn!("Authorization header is not a Bearer token");
-            return Err(unauthorized());
-        };
-        if token != state.api_token {
-            tracing::warn!("invalid bearer token");
-            return Err(unauthorized());
-        }
-        tracing::debug!("bearer auth ok");
-        Ok(BearerAuth)
-    }
 }
