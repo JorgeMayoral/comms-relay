@@ -1,7 +1,42 @@
+[env]
+DATABASE_URL = "postgres://user:password@localhost:5432/relay"
+RUST_LOG = "debug"
+RELAY_API_TOKEN = "25df3e04-276b-4e9b-83b6-0534ad5ce451"
+
 [tasks.server]
-description = "Run server"
+description = "Run the relay server"
 run = "cargo run --bin relay"
 
 [tasks.client]
-description = "Run client"
+description = "Run the uplink client"
 run = "cargo run --bin uplink"
+
+[tasks.watch]
+description = "Run the relay server with auto-reload on changes (via bacon)"
+run = "bacon run-long"
+
+[tasks.dev-db]
+description = "Start the local postgres container"
+run = "docker compose up db"
+
+[tasks.prepare-db]
+description = "Run sqlx prepare"
+run = "cargo sqlx prepare"
+
+[tasks.migrate-db]
+description = "Run database migrations"
+run = "cargo sqlx migrate run"
+
+[tasks.docker-build]
+description = "Build a local image of the server"
+run = "docker build -t relay:latest ."
+
+[tasks.docker-run]
+description = "Run the latest local docker build of the server (requires dev-db running)"
+run = """
+docker run --name relay --rm -p 8000:8000 \
+  --network comms-relay_default \
+  -e DATABASE_URL=postgres://user:password@db:5432/relay \
+  -e RELAY_API_TOKEN={{env.RELAY_API_TOKEN}} \
+  relay:latest
+"""
