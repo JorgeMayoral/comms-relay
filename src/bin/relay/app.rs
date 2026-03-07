@@ -97,7 +97,7 @@ struct AppError(anyhow::Error);
 
 impl IntoResponse for AppError {
     fn into_response(self) -> Response {
-        tracing::error!("internal server error: {:?}", self.0);
+        tracing::error!(error = %format_args!("{:#}", self.0), "internal server error");
         StatusCode::INTERNAL_SERVER_ERROR.into_response()
     }
 }

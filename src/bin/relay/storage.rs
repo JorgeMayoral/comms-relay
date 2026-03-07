@@ -28,6 +28,7 @@ impl PgStorage {
         Ok(Self(pool))
     }
 
+    #[tracing::instrument(skip(self), err)]
     pub async fn insert_publication(&self, publication: &Publication) -> Result<()> {
         sqlx::query!(
             r#"INSERT INTO publications
@@ -44,9 +45,11 @@ impl PgStorage {
         .execute(&self.0)
         .await
         .context("insert publication")?;
+        tracing::debug!("publication inserted");
         Ok(())
     }
 
+    #[tracing::instrument(skip(self), err)]
     pub async fn get_publication(&self, id: Ulid) -> Result<Option<Publication>> {
         let row = sqlx::query!(
             r#"SELECT id, content, pub_date as "pub_date: PgZoned",
@@ -57,7 +60,7 @@ impl PgStorage {
         .fetch_optional(&self.0)
         .await
         .context("get publication")?;
-
+        tracing::debug!(found = row.is_some(), "publication fetched");
         Ok(row.map(|r| {
             Publication::new(
                 r.id.parse().expect("ULID in DB was written by us"),
@@ -71,6 +74,7 @@ impl PgStorage {
         }))
     }
 
+    #[tracing::instrument(skip(self), err)]
     pub async fn list_publications(&self) -> Result<Vec<Publication>> {
         let rows = sqlx::query!(
             r#"SELECT id, content, pub_date as "pub_date: PgZoned",
@@ -81,6 +85,7 @@ impl PgStorage {
         .await
         .context("list publications")?;
 
+        tracing::debug!(count = rows.len(), "publications listed");
         Ok(rows
             .into_iter()
             .map(|r| {

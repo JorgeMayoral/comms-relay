@@ -1,16 +1,23 @@
+use std::time::Duration;
+
 use axum::{
     body::Body,
     extract::{MatchedPath, Request},
+    response::Response,
 };
 use tower_http::{
     classify::{ServerErrorsAsFailures, SharedClassifier},
-    trace::{DefaultOnResponse, TraceLayer},
+    trace::{DefaultOnRequest, TraceLayer},
 };
 use tracing::Span;
 use tracing_subscriber::{layer::SubscriberExt, util::SubscriberInitExt};
 
-type HttpTraceLayer =
-    TraceLayer<SharedClassifier<ServerErrorsAsFailures>, fn(&Request<Body>) -> Span>;
+type HttpTraceLayer = TraceLayer<
+    SharedClassifier<ServerErrorsAsFailures>,
+    fn(&Request<Body>) -> Span,
+    DefaultOnRequest,
+    fn(&Response<Body>, Duration, &Span),
+>;
 
 pub fn init_tracing() {
     tracing_subscriber::registry()
@@ -26,7 +33,7 @@ pub fn init_tracing() {
 pub fn get_tracing_layer() -> HttpTraceLayer {
     TraceLayer::new_for_http()
         .make_span_with(make_span as fn(&Request<Body>) -> Span)
-        .on_response(DefaultOnResponse::new().level(tracing::Level::INFO))
+        .on_response(on_response as fn(&Response<Body>, Duration, &Span))
 }
 
 fn make_span(req: &Request<Body>) -> Span {
@@ -36,5 +43,11 @@ fn make_span(req: &Request<Body>) -> Span {
         .extensions()
         .get::<MatchedPath>()
         .map(MatchedPath::as_str);
-    tracing::info_span!("request", %method, %uri, matched_path)
+    tracing::info_span!("request", %method, %uri, matched_path, status = tracing::field::Empty)
+}
+
+fn on_response(res: &Response<Body>, latency: Duration, span: &Span) {
+    let status = res.status().as_u16();
+    span.record("status", status);
+    tracing::info!(latency = ?latency, status, "response");
 }
