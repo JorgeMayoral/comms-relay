@@ -19,6 +19,7 @@ path = "./src/lib/mod.rs"
 [dependencies]
 anyhow = "1.0.102"
 axum = { version = "0.8.8", features = ["macros"] }
+clap = { version = "4.5.60", features = ["derive"] }
 jiff = { version = "0.2.23", features = ["serde"] }
 serde = { version = "1.0.228", features = ["derive"] }
 sqlx = { version = "0.8.6", features = ["runtime-tokio-rustls", "postgres", "macros", "migrate"] }
