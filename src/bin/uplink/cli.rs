@@ -22,6 +22,10 @@ pub struct Cli {
     #[arg(long, env = "RELAY_API_TOKEN", global = true)]
     token: Option<String>,
 
+    /// Output raw JSON instead of formatted text
+    #[arg(long, global = true)]
+    json: bool,
+
     #[command(subcommand)]
     command: Command,
 }
@@ -44,15 +48,19 @@ impl Cli {
                 let token = token.context(
                     "no token provided — run `uplink config --token <token>` or set RELAY_API_TOKEN",
                 )?;
-                args.exec(base_url, token)
+                args.exec(base_url, token, self.json)
                     .await
                     .context("execute publish command")?;
             }
             Command::List(args) => {
-                args.exec(base_url).await.context("execute list command")?;
+                args.exec(base_url, self.json)
+                    .await
+                    .context("execute list command")?;
             }
             Command::Get(args) => {
-                args.exec(base_url).await.context("execute get command")?;
+                args.exec(base_url, self.json)
+                    .await
+                    .context("execute get command")?;
             }
         }
 
