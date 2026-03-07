@@ -5,6 +5,7 @@ use crate::cli::Cli;
 
 mod actions;
 mod cli;
+mod config;
 
 #[tokio::main]
 async fn main() -> Result<()> {

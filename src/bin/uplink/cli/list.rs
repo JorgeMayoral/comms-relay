@@ -7,8 +7,8 @@ use crate::actions;
 pub struct ListArgs;
 
 impl ListArgs {
-    pub async fn exec(&self) -> Result<()> {
-        let data = actions::get_all_publications()
+    pub async fn exec(&self, base_url: &str) -> Result<()> {
+        let data = actions::get_all_publications(base_url)
             .await
             .context("list publications")?;
         let json = serde_json::to_string_pretty(&data).context("serialize publications as JSON")?;

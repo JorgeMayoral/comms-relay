@@ -8,9 +8,9 @@ use comms::{
 };
 use ulid::Ulid;
 
-pub async fn get_publication_by_id(id: &Ulid) -> Result<Publication> {
-    let url = format!("http://localhost:8000/publications/{id}");
-    let response = reqwest::get(url)
+pub async fn get_publication_by_id(base_url: &str, id: &Ulid) -> Result<Publication> {
+    let url = format!("{base_url}/publications/{id}");
+    let response = reqwest::get(&url)
         .await
         .context(format!("send GET /publications/{id} to relay"))?;
     let data = response
@@ -22,8 +22,9 @@ pub async fn get_publication_by_id(id: &Ulid) -> Result<Publication> {
     Ok(data.inner())
 }
 
-pub async fn get_all_publications() -> Result<Vec<Publication>> {
-    let response = reqwest::get("http://localhost:8000/publications")
+pub async fn get_all_publications(base_url: &str) -> Result<Vec<Publication>> {
+    let url = format!("{base_url}/publications");
+    let response = reqwest::get(&url)
         .await
         .context("send GET /publications to relay")?;
     let data = response
@@ -35,12 +36,17 @@ pub async fn get_all_publications() -> Result<Vec<Publication>> {
     Ok(data.inner())
 }
 
-pub async fn post_net_publication(content: String) -> Result<Publication> {
+pub async fn post_net_publication(
+    base_url: &str,
+    token: &str,
+    content: String,
+) -> Result<Publication> {
     let client = reqwest::Client::new();
     let body = NewPublicationRequest { content };
+    let url = format!("{base_url}/publications");
     let response = client
-        .post("http://localhost:8000/publications") // TODO: remove hardcoded url
-        .bearer_auth("25df3e04-276b-4e9b-83b6-0534ad5ce451") // TODO: remove hardcoded token
+        .post(&url)
+        .bearer_auth(token)
         .json(&body)
         .send()
         .await

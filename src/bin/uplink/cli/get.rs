@@ -10,8 +10,8 @@ pub struct GetArgs {
 }
 
 impl GetArgs {
-    pub async fn exec(&self) -> Result<()> {
-        let data = actions::get_publication_by_id(&self.id)
+    pub async fn exec(&self, base_url: &str) -> Result<()> {
+        let data = actions::get_publication_by_id(base_url, &self.id)
             .await
             .context(format!("get publication {}", self.id))?;
         let json = serde_json::to_string_pretty(&data).context("serialize publication as JSON")?;

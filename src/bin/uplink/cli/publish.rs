@@ -9,8 +9,8 @@ pub struct PublishArgs {
 }
 
 impl PublishArgs {
-    pub async fn exec(&self) -> Result<()> {
-        let data = actions::post_net_publication(self.content.clone())
+    pub async fn exec(&self, base_url: &str, token: &str) -> Result<()> {
+        let data = actions::post_net_publication(base_url, token, self.content.clone())
             .await
             .context("publish content")?;
         let json = serde_json::to_string_pretty(&data).context("serialize publication as JSON")?;
