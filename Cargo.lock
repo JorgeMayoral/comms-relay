@@ -333,6 +333,7 @@ dependencies = [
  "jiff",
  "reqwest",
  "serde",
+ "serde_json",
  "sqlx",
  "tokio",
  "tower",
