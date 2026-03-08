@@ -4,6 +4,7 @@ use jiff::Timestamp;
 use serde::{Deserialize, Serialize};
 
 pub struct BlueskyClient {
+    client: reqwest::Client,
     instance_url: String,
     user_identifier: String,
     user_password: String,
@@ -39,8 +40,14 @@ struct CreateRecordResponse {
 }
 
 impl BlueskyClient {
-    pub fn new(instance_url: String, user_identifier: String, user_password: String) -> Self {
+    pub fn new(
+        client: reqwest::Client,
+        instance_url: String,
+        user_identifier: String,
+        user_password: String,
+    ) -> Self {
         Self {
+            client,
             instance_url,
             user_identifier,
             user_password,
@@ -49,8 +56,8 @@ impl BlueskyClient {
 
     #[tracing::instrument(skip(self), err)]
     pub async fn post(&self, content: String) -> Result<BlueskyStatus> {
-        let client = reqwest::Client::new();
-        let session: Session = client
+        let session: Session = self
+            .client
             .post(format!(
                 "{}/xrpc/com.atproto.server.createSession",
                 self.instance_url
@@ -78,7 +85,8 @@ impl BlueskyClient {
                 created_at,
             },
         };
-        let record: CreateRecordResponse = client
+        let record: CreateRecordResponse = self
+            .client
             .post(format!(
                 "{}/xrpc/com.atproto.repo.createRecord",
                 self.instance_url

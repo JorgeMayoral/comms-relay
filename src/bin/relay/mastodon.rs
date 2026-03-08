@@ -4,13 +4,15 @@ use reqwest::multipart::Form;
 use ulid::Ulid;
 
 pub struct MastodonClient {
+    client: reqwest::Client,
     instance_url: String,
     access_token: String,
 }
 
 impl MastodonClient {
-    pub fn new(instance_url: String, access_token: String) -> Self {
+    pub fn new(client: reqwest::Client, instance_url: String, access_token: String) -> Self {
         Self {
+            client,
             instance_url,
             access_token,
         }
@@ -21,8 +23,8 @@ impl MastodonClient {
         let idempotency_key = Ulid::new();
         let url = format!("{}/api/v1/statuses", self.instance_url);
         let form = Form::new().text("status", content);
-        let client = reqwest::Client::new();
-        let response = client
+        let response = self
+            .client
             .post(url)
             .bearer_auth(&self.access_token)
             .header("Idempotency-Key", idempotency_key.to_string())

@@ -17,16 +17,16 @@ use comms::{
 };
 use ulid::Ulid;
 
-use crate::{auth::BearerAuth, bluesky, error::AppError, mastodon, storage::PgStorage, telemetry};
+use crate::{
+    auth::BearerAuth, bluesky::BlueskyClient, error::AppError, mastodon::MastodonClient,
+    storage::PgStorage, telemetry,
+};
 
 pub(crate) struct AppState {
     pub(crate) storage: PgStorage,
     pub(crate) api_token: String,
-    pub(crate) mastodon_access_token: String,
-    pub(crate) mastodon_instance_url: String,
-    pub(crate) bluesky_instance_url: String,
-    pub(crate) bluesky_identifier: String,
-    pub(crate) bluesky_app_password: String,
+    pub(crate) mastodon_client: MastodonClient,
+    pub(crate) bluesky_client: BlueskyClient,
 }
 
 impl AppState {
@@ -42,14 +42,28 @@ impl AppState {
         let storage = PgStorage::create(db_url)
             .await
             .context("create postgres storage")?;
-        Ok(Self {
-            storage,
-            api_token,
-            mastodon_access_token,
+
+        let http_client = reqwest::ClientBuilder::new()
+            .build()
+            .context("build reqwest HTTP client")?;
+
+        let mastodon_client = MastodonClient::new(
+            http_client.clone(),
             mastodon_instance_url,
+            mastodon_access_token,
+        );
+        let bluesky_client = BlueskyClient::new(
+            http_client,
             bluesky_instance_url,
             bluesky_identifier,
             bluesky_app_password,
+        );
+
+        Ok(Self {
+            storage,
+            api_token,
+            mastodon_client,
+            bluesky_client,
         })
     }
 }
@@ -86,12 +100,10 @@ async fn post_publication(
     Json(new_publication): Json<NewPublicationRequest>,
 ) -> axum::response::Result<(StatusCode, Json<NewPublicationResponse>), AppError> {
     let mut new_publication: Publication = new_publication.into();
-    match mastodon::MastodonClient::new(
-        state.mastodon_instance_url.clone(),
-        state.mastodon_access_token.clone(),
-    )
-    .post(new_publication.content().to_owned())
-    .await
+    match state
+        .mastodon_client
+        .post(new_publication.content().to_owned())
+        .await
     {
         Ok(mastodon_response) => {
             new_publication.set_mastodon_id(mastodon_response.id);
@@ -102,13 +114,10 @@ async fn post_publication(
         }
     }
 
-    match bluesky::BlueskyClient::new(
-        state.bluesky_instance_url.clone(),
-        state.bluesky_identifier.clone(),
-        state.bluesky_app_password.clone(),
-    )
-    .post(new_publication.content().to_owned())
-    .await
+    match state
+        .bluesky_client
+        .post(new_publication.content().to_owned())
+        .await
     {
         Ok(bluesky_response) => {
             new_publication.set_bluesky_id(bluesky_response.uri);
