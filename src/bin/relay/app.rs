@@ -17,19 +17,31 @@ use comms::{
 };
 use ulid::Ulid;
 
-use crate::{auth::BearerAuth, error::AppError, storage::PgStorage, telemetry};
+use crate::{auth::BearerAuth, error::AppError, mastodon, storage::PgStorage, telemetry};
 
 pub(crate) struct AppState {
     pub(crate) storage: PgStorage,
     pub(crate) api_token: String,
+    pub(crate) mastodon_access_token: String,
+    pub(crate) mastodon_instance_url: String,
 }
 
 impl AppState {
-    pub(crate) async fn new(db_url: &str, api_token: String) -> Result<Self> {
+    pub(crate) async fn new(
+        db_url: &str,
+        api_token: String,
+        mastodon_access_token: String,
+        mastodon_instance_url: String,
+    ) -> Result<Self> {
         let storage = PgStorage::create(db_url)
             .await
             .context("create postgres storage")?;
-        Ok(Self { storage, api_token })
+        Ok(Self {
+            storage,
+            api_token,
+            mastodon_access_token,
+            mastodon_instance_url,
+        })
     }
 }
 
@@ -64,7 +76,16 @@ async fn post_publication(
     _auth: BearerAuth,
     Json(new_publication): Json<NewPublicationRequest>,
 ) -> axum::response::Result<(StatusCode, Json<NewPublicationResponse>), AppError> {
-    let new_publication: Publication = new_publication.into();
+    let mut new_publication: Publication = new_publication.into();
+    let mastodon_response = mastodon::MastodonClient::new(
+        state.mastodon_instance_url.clone(),
+        state.mastodon_access_token.clone(),
+    )
+    .post(new_publication.content().to_owned())
+    .await
+    .context("post publication to Mastodon")?;
+    new_publication.set_mastodon_id(mastodon_response.id);
+    new_publication.set_mastodon_url(mastodon_response.url);
     state
         .storage
         .insert_publication(&new_publication)
