@@ -1,0 +1,19 @@
+info:
+  name: DELETE publication
+  type: http
+  seq: 2
+
+http:
+  method: DELETE
+  url: http://localhost:8000/publications/:id
+  params:
+    - name: id
+      value: 01KK264GV8BEVSWRE6SE2GRA1T
+      type: path
+  auth: inherit
+
+settings:
+  encodeUrl: true
+  timeout: 0
+  followRedirects: true
+  maxRedirects: 5

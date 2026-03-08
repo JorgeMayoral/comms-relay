@@ -2,9 +2,29 @@ opencollection: 1.0.0
 
 info:
   name: comms-relay
+config:
+  proxy:
+    inherit: true
+    config:
+      protocol: http
+      hostname: ""
+      port: ""
+      auth:
+        username: ""
+        password: ""
+      bypassProxy: ""
+
+request:
+  auth:
+    type: bearer
+    token: 25df3e04-276b-4e9b-83b6-0534ad5ce451
 bundled: false
 extensions:
   bruno:
     ignore:
       - node_modules
       - .git
+    presets:
+      request:
+        type: http
+        url: http://localhost:8000

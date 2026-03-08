@@ -101,6 +101,17 @@ impl PgStorage {
             })
             .collect())
     }
+
+    #[tracing::instrument(skip(self), err)]
+    pub async fn delete_publication(&self, id: Ulid) -> Result<bool> {
+        let row = sqlx::query!(r#"DELETE FROM publications WHERE id = $1"#, id.to_string(),)
+            .execute(&self.0)
+            .await
+            .context("delete publication")?;
+        let deleted = row.rows_affected() > 0;
+        tracing::debug!(deleted, "publication delete attempted");
+        Ok(deleted)
+    }
 }
 
 const PG_EPOCH_OFFSET_MICROS: i64 = 946_684_800 * 1_000_000;

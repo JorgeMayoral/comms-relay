@@ -5,7 +5,7 @@ use axum::{
     Json, Router,
     extract::{Path, State},
     http::StatusCode,
-    routing::{get, post},
+    routing::{delete, get, post},
 };
 use comms::{
     payloads::{
@@ -39,6 +39,7 @@ pub fn app(state: AppState) -> Router {
         .route("/publications", get(list_publications))
         .route("/publications", post(post_publication))
         .route("/publications/{id}", get(get_publication))
+        .route("/publications/{id}", delete(delete_publication))
         .with_state(Arc::new(state))
         .layer(tracing_layer)
 }
@@ -90,4 +91,22 @@ async fn get_publication(
     };
     let response = publication.map(GetPublicationResponse::from);
     Ok((status, Json(response)))
+}
+
+async fn delete_publication(
+    State(state): State<Arc<AppState>>,
+    _auth: BearerAuth,
+    Path(id): Path<Ulid>,
+) -> axum::response::Result<StatusCode, AppError> {
+    let deleted = state
+        .storage
+        .delete_publication(id)
+        .await
+        .context("delete a publication from db")?;
+    let status = if deleted {
+        StatusCode::NO_CONTENT
+    } else {
+        StatusCode::NOT_FOUND
+    };
+    Ok(status)
 }
