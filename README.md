@@ -248,3 +248,64 @@ The config file is managed with `uplink config` and looks like:
 url = "http://localhost:8000"
 token = "your-token-here"
 ```
+
+---
+
+## Deployment
+
+### Docker Compose
+
+The following `docker-compose.yml` example deploys the relay alongside Postgres.
+
+Environment variables are loaded from a `.env` file:
+
+| Variable | Description |
+|---|---|
+| `POSTGRES_DB` | Postgres database name |
+| `POSTGRES_USER` | Postgres username |
+| `POSTGRES_PASSWORD` | Postgres password |
+| `RELAY_API_TOKEN` | Bearer token for the Relay server. Used by the Uplink client. |
+| `MASTODON_INSTANCE_URL` | Mastodon server base URL |
+| `MASTODON_ACCESS_TOKEN` | OAuth bearer token for Mastodon |
+| `BLUESKY_INSTANCE_URL` | Bluesky PDS base URL |
+| `BLUESKY_IDENTIFIER` | Bluesky account handle or DID |
+| `BLUESKY_APP_PASSWORD` | Bluesky app password |
+
+```yaml
+services:
+  db:
+    image: postgres:18
+    environment:
+      POSTGRES_DB: ${POSTGRES_DB}
+      POSTGRES_USER: ${POSTGRES_USER}
+      POSTGRES_PASSWORD: ${POSTGRES_PASSWORD}
+    volumes:
+      - db_data:/var/lib/postgresql
+    healthcheck:
+      test: ["CMD-SHELL", "pg_isready -U ${POSTGRES_USER} -d relay"]
+      interval: 5s
+      timeout: 5s
+      retries: 5
+    restart: unless-stopped
+
+  relay:
+    image: ghcr.io/jorgemayoral/comms-relay:latest
+    expose:
+      - 8000
+    environment:
+      DATABASE_URL: postgres://${POSTGRES_USER}:${POSTGRES_PASSWORD}@db:5432/${POSTGRES_DB}
+      RELAY_API_TOKEN: ${RELAY_API_TOKEN}
+      RUST_LOG: info
+      MASTODON_INSTANCE_URL: ${MASTODON_INSTANCE_URL}
+      BLUESKY_INSTANCE_URL: ${BLUESKY_INSTANCE_URL}
+      MASTODON_ACCESS_TOKEN: ${MASTODON_ACCESS_TOKEN}
+      BLUESKY_IDENTIFIER: ${BLUESKY_IDENTIFIER}
+      BLUESKY_APP_PASSWORD: ${BLUESKY_APP_PASSWORD}
+    depends_on:
+      db:
+        condition: service_healthy
+    restart: unless-stopped
+
+volumes:
+  db_data:
+```
