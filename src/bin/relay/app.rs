@@ -5,6 +5,7 @@ use axum::{
     Json, Router,
     extract::{Path, State},
     http::StatusCode,
+    response::{IntoResponse, Response},
     routing::{delete, get, post},
 };
 use comms::{
@@ -78,19 +79,20 @@ async fn post_publication(
 async fn get_publication(
     State(state): State<Arc<AppState>>,
     Path(id): Path<Ulid>,
-) -> axum::response::Result<(StatusCode, Json<Option<GetPublicationResponse>>), AppError> {
-    let publication = state
+) -> axum::response::Result<Response, AppError> {
+    let Some(publication) = state
         .storage
         .get_publication(id)
         .await
-        .context("get a publication from db")?;
-    let status = if publication.is_some() {
-        StatusCode::OK
-    } else {
-        StatusCode::NOT_FOUND
+        .context("get a publication from db")?
+    else {
+        return Ok(StatusCode::NOT_FOUND.into_response());
     };
-    let response = publication.map(GetPublicationResponse::from);
-    Ok((status, Json(response)))
+    Ok((
+        StatusCode::OK,
+        Json(GetPublicationResponse::from(publication)),
+    )
+        .into_response())
 }
 
 async fn delete_publication(
