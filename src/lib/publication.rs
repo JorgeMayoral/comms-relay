@@ -57,9 +57,17 @@ impl Publication {
         self.mastodon_id.as_deref()
     }
 
+    pub fn set_mastodon_id(&mut self, mastodon_id: String) {
+        self.mastodon_id = Some(mastodon_id);
+    }
+
     #[must_use]
     pub fn mastodon_url(&self) -> Option<&str> {
         self.mastodon_url.as_deref()
+    }
+
+    pub fn set_mastodon_url(&mut self, mastodon_url: String) {
+        self.mastodon_url = Some(mastodon_url);
     }
 
     #[must_use]
@@ -67,9 +75,17 @@ impl Publication {
         self.bluesky_id.as_deref()
     }
 
+    pub fn set_bluesky_id(&mut self, bluesky_id: String) {
+        self.bluesky_id = Some(bluesky_id);
+    }
+
     #[must_use]
     pub fn bluesky_url(&self) -> Option<&str> {
         self.bluesky_url.as_deref()
+    }
+
+    pub fn set_bluesky_url(&mut self, bluesky_url: String) {
+        self.bluesky_url = Some(bluesky_url);
     }
 }
 
