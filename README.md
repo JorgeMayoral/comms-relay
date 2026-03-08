@@ -1,8 +1,6 @@
 # Comms Relay
 
-A self-hosted cross-posting relay for publishing content to Mastodon and Bluesky simultaneously. You write once through the **uplink** CLI; the **relay** server stores the publication and (once implemented) fans it out to each social platform.
-
-> **Status:** Storage and the HTTP API are fully functional. Social platform posting (Mastodon, Bluesky) is planned but not yet implemented.
+A self-hosted cross-posting relay for publishing content to Mastodon and Bluesky simultaneously. You write once through the **uplink** CLI; the **relay** server stores the publication and fans it out to each social platform.
 
 For implementation details, see [IMPLEMENTATION.md](IMPLEMENTATION.md).
 
@@ -13,7 +11,7 @@ For implementation details, see [IMPLEMENTATION.md](IMPLEMENTATION.md).
 | Component | Description |
 |---|---|
 | **relay** | HTTP server (port 8000). Stores publications in Postgres and will handle cross-posting |
-| **uplink** | CLI client. Create, list, and retrieve publications |
+| **uplink** | CLI client. Create, list, retrieve, and delete publications |
 | **comms** | Shared Rust library. `Publication` type and HTTP payload types used by both binaries |
 
 ---
@@ -39,7 +37,8 @@ mise run dev-db
 
 ```sh
 mise run server
-# or: RELAY_API_TOKEN=mytoken DATABASE_URL=postgres://user:password@localhost:5432/relay cargo run --bin relay
+# or: set the required env vars (see Configuration reference) and run:
+# cargo run --bin relay
 ```
 
 The server binds to `0.0.0.0:8000` and runs database migrations automatically on startup.
@@ -146,6 +145,24 @@ Mastodon: (not posted)
 Bluesky:  (not posted)
 ```
 
+### `uplink delete`
+
+Delete a publication by its ULID. Requires a token (from config, `RELAY_API_TOKEN`, or `--token`).
+
+```
+uplink delete <ID>
+```
+
+```sh
+uplink delete 01JNXK2ABCDEFGHIJKLMNOPQRS
+```
+
+**Output:**
+
+```
+Deleted · 01JNXK2ABCDEFGHIJKLMNOPQRS
+```
+
 ---
 
 ## Relay HTTP API
@@ -192,6 +209,14 @@ Fetch one publication by its ULID.
 
 **Response** `200 OK`: single publication object, or `404 Not Found`.
 
+### `DELETE /publications/{id}`
+
+Delete a publication by its ULID.
+
+**Auth required:** yes
+
+**Response** `204 No Content` if deleted, `404 Not Found` if the ID does not exist.
+
 ---
 
 ## Configuration reference
@@ -202,6 +227,11 @@ Fetch one publication by its ULID.
 |---|---|---|
 | `DATABASE_URL` | yes | Postgres connection string (`postgres://user:password@host:5432/db`) |
 | `RELAY_API_TOKEN` | yes | Bearer token validated on write requests |
+| `MASTODON_ACCESS_TOKEN` | yes | OAuth bearer token for Mastodon |
+| `MASTODON_INSTANCE_URL` | yes | Mastodon server base URL (e.g. `https://mastodon.social`) |
+| `BLUESKY_INSTANCE_URL` | yes | Bluesky PDS base URL (e.g. `https://bsky.social`) |
+| `BLUESKY_IDENTIFIER` | yes | Bluesky account handle or DID |
+| `BLUESKY_APP_PASSWORD` | yes | Bluesky app password |
 | `RUST_LOG` | no | Log filter (default: `info`) |
 
 ### Uplink (client)

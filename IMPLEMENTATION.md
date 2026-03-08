@@ -10,9 +10,9 @@ One Rust crate (`comms-relay`) with three elements, two binaries and one library
 
 ```
 comms-relay/
-├── src/lib/          → comms (lib)   — shared types
-├── src/bin/relay/    → relay (bin)   — HTTP server
-└── src/bin/uplink/   → uplink (bin)  — CLI client
+├── src/lib/          → comms (lib)   - shared types
+├── src/bin/relay/    → relay (bin)   - HTTP server
+└── src/bin/uplink/   → uplink (bin)  - CLI client
 ```
 
 The library (`comms`) exists solely to share the `Publication` domain type and the HTTP payload wrappers between the two binaries without duplication. Both binaries depend on it; neither binary depends on the other.
@@ -33,7 +33,7 @@ The central type is `Publication` (`src/lib/publication.rs`):
 | `bluesky_id` | `Option<String>` | Set after successful Bluesky post |
 | `bluesky_url` | `Option<String>` | Set after successful Bluesky post |
 
-All fields are private; access goes through getter methods. The social platform fields are placeholders, they exist in the schema and the type, but are always `None` until posting is implemented.
+All fields are private; access goes through getter methods. The social platform fields are populated after a successful post to each platform.
 
 **Database schema** (`migrations/20260306173309_initial_migration.sql`):
 
@@ -57,25 +57,34 @@ The ULID is stored as `TEXT`. Timestamps are stored as `TIMESTAMPTZ`.
 
 ### Router and AppState
 
-`src/bin/relay/app.rs` defines the Axum router with three routes:
+`src/bin/relay/app.rs` defines the Axum router with four routes:
 
 | Method | Path | Auth | Handler |
 |---|---|---|---|
 | `GET` | `/publications` | no | `list_publications` |
 | `POST` | `/publications` | yes | `post_publication` |
 | `GET` | `/publications/{id}` | no | `get_publication` |
+| `DELETE` | `/publications/{id}` | yes | `delete_publication` |
 
-`AppState` holds a `PgStorage` instance and the `api_token` string. It is wrapped in `Arc` and shared across all handlers.
+`AppState` holds a `PgStorage` instance, the `api_token` string, and the five social-platform credential fields (`mastodon_access_token`, `mastodon_instance_url`, `bluesky_instance_url`, `bluesky_identifier`, `bluesky_app_password`). It is wrapped in `Arc` and shared across all handlers.
 
 ### Authentication
 
-`src/bin/relay/auth.rs` implements `BearerAuth`, a custom `FromRequestParts` extractor. It parses the `Authorization: Bearer <token>` header and compares it to `AppState.api_token` in constant time. Returns `401 Unauthorized` if the header is absent, malformed, or invalid. Only the `POST /publications` handler uses it.
+`src/bin/relay/auth.rs` implements `BearerAuth`, a custom `FromRequestParts` extractor. It parses the `Authorization: Bearer <token>` header and compares it to `AppState.api_token` in constant time. Returns `401 Unauthorized` if the header is absent, malformed, or invalid. Both `POST /publications` and `DELETE /publications/{id}` require it.
+
+### Social posting
+
+`src/bin/relay/mastodon.rs` provides `MastodonClient`. Its `post()` method sends the publication content to `POST {instance_url}/api/v1/statuses` as multipart form data, with an `Idempotency-Key` header (a fresh ULID per request) and bearer auth. Returns `MastodonStatus { id, url, uri, created_at }` from the `comms` lib.
+
+`src/bin/relay/bluesky.rs` provides `BlueskyClient`. Its `post()` method is two-step: it authenticates via `createSession` (receiving a DID and access JWT), then creates a post record via `createRecord`. The public URL is constructed from the AT URI returned by the API (`https://bsky.app/profile/{handle}/post/{rkey}`), by extracting the rkey from the last segment of the URI. Returns `BlueskyStatus { uri, url }` from the `comms` lib.
+
+Both clients are instantiated in `AppState` from the environment variables loaded at startup.
 
 ### Storage and PgZoned
 
-`src/bin/relay/storage.rs` wraps a `sqlx::PgPool`. All queries use `sqlx::query!()` macros, which are checked against the live database schema at compile time.
+`src/bin/relay/storage.rs` wraps a `sqlx::PgPool`. All queries use `sqlx::query!()` macros, which are checked against the live database schema at compile time. Public methods: `create`, `insert_publication`, `get_publication`, `list_publications`, and `delete_publication`. `delete_publication` returns `Result<bool>` (`true` if a row was deleted, `false` if the ID was not found).
 
-`jiff::Zoned` has no native sqlx codec, so `PgZoned` is a newtype that implements `sqlx::Encode` and `sqlx::Decode` by converting to/from a microsecond-precision Unix timestamp — the representation Postgres uses internally for `TIMESTAMPTZ`.
+`jiff::Zoned` has no native sqlx codec, so `PgZoned` is a newtype that implements `sqlx::Encode` and `sqlx::Decode` by converting to/from a microsecond-precision Unix timestamp, the representation Postgres uses internally for `TIMESTAMPTZ`.
 
 ### Migrations
 
@@ -99,7 +108,8 @@ src/bin/uplink/
 │   ├── config.rs  - uplink config subcommand
 │   ├── publish.rs - uplink publish subcommand
 │   ├── list.rs    - uplink list subcommand
-│   └── get.rs     - uplink get subcommand
+│   ├── get.rs     - uplink get subcommand
+│   └── delete.rs  - uplink delete subcommand
 ├── actions.rs     - stateless async HTTP functions (reqwest)
 ├── config.rs      - AppConfig: load/save ~/.config/uplink/config.toml
 └── display.rs     - colored terminal output functions
@@ -132,10 +142,11 @@ The config file path is resolved via the `directories` crate (`ProjectDirs::from
 | `print_publications` | `list` |
 | `print_publication` | `get` |
 | `print_publish_success` | `publish` |
+| `print_delete_success` | `delete` |
 
 Colors are applied with `owo-colors` using `if_supports_color(Stream::Stdout, ...)`, which automatically suppresses ANSI codes when stdout is not a TTY or when `NO_COLOR` is set.
 
-**Chaining limitation:** `owo-colors` style methods (`.bold()`, `.green()`, etc.) each return a type that borrows from `self`. Chaining two of them inside an `if_supports_color` closure creates a temporary that the compiler rejects (`E0515`). The workaround is `Style::new().green().bold()`, a value type that combines multiple attributes — passed to a single `.style()` call:
+**Chaining limitation:** `owo-colors` style methods (`.bold()`, `.green()`, etc.) each return a type that borrows from `self`. Chaining two of them inside an `if_supports_color` closure creates a temporary that the compiler rejects (`E0515`). The workaround is `Style::new().green().bold()`, a value type that combines multiple attributes, passed to a single `.style()` call:
 
 ```rust
 let success_style = Style::new().green().bold();
