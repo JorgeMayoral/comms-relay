@@ -1,5 +1,6 @@
 use comms::publication::Publication;
 use owo_colors::{OwoColorize, Stream, Style};
+use ulid::Ulid;
 
 const CONTENT_PREVIEW_CHARS: usize = 72;
 
@@ -50,6 +51,15 @@ pub fn print_publish_success(publication: &Publication) {
     println!(
         "  ID: {}",
         id.if_supports_color(Stream::Stdout, |t| t.bold())
+    );
+}
+
+pub fn print_delete_success(id: &Ulid) {
+    let header = format!("Deleted · {id}");
+    let success_style = Style::new().green().bold();
+    println!(
+        "{}",
+        header.if_supports_color(Stream::Stdout, |t| t.style(success_style))
     );
 }
 

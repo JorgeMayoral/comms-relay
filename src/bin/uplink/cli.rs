@@ -2,11 +2,14 @@ use anyhow::{Context, Result};
 use clap::{Parser, Subcommand};
 
 use crate::{
-    cli::{config::ConfigArgs, get::GetArgs, list::ListArgs, publish::PublishArgs},
+    cli::{
+        config::ConfigArgs, delete::DeleteArgs, get::GetArgs, list::ListArgs, publish::PublishArgs,
+    },
     config::AppConfig,
 };
 
 mod config;
+mod delete;
 mod get;
 mod list;
 mod publish;
@@ -46,7 +49,7 @@ impl Cli {
             }
             Command::Publish(args) => {
                 let token = token.context(
-                    "no token provided — run `uplink config --token <token>` or set RELAY_API_TOKEN",
+                    "no token provided. Run `uplink config --token <token>` or set RELAY_API_TOKEN",
                 )?;
                 args.exec(base_url, token, self.json)
                     .await
@@ -61,6 +64,14 @@ impl Cli {
                 args.exec(base_url, self.json)
                     .await
                     .context("execute get command")?;
+            }
+            Command::Delete(args) => {
+                let token = token.context(
+                    "no token provided. Run `uplink config --token <token>` or set RELAY_API_TOKEN",
+                )?;
+                args.exec(base_url, token, self.json)
+                    .await
+                    .context("execute delete command")?;
             }
         }
 
@@ -78,4 +89,6 @@ enum Command {
     List(ListArgs),
     /// Get a single publication by ID
     Get(GetArgs),
+    /// Delete a publication by ID
+    Delete(DeleteArgs),
 }

@@ -59,3 +59,17 @@ pub async fn post_new_publication(
         .context("deserialize new publication response")?;
     Ok(data.inner())
 }
+
+pub async fn delete_publication(base_url: &str, token: &str, id: &Ulid) -> Result<()> {
+    let client = reqwest::Client::new();
+    let url = format!("{base_url}/publications/{id}");
+    client
+        .delete(&url)
+        .bearer_auth(token)
+        .send()
+        .await
+        .context(format!("send DELETE /publications/{id} to relay"))?
+        .error_for_status()
+        .context("check relay response status")?;
+    Ok(())
+}
