@@ -10,7 +10,7 @@ pub struct PublishArgs {
 
 impl PublishArgs {
     pub async fn exec(&self, base_url: &str, token: &str, json: bool) -> Result<()> {
-        let data = actions::post_net_publication(base_url, token, self.content.clone())
+        let data = actions::post_new_publication(base_url, token, self.content.clone())
             .await
             .context("publish content")?;
         if json {

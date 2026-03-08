@@ -36,7 +36,7 @@ pub async fn get_all_publications(base_url: &str) -> Result<Vec<Publication>> {
     Ok(data.inner())
 }
 
-pub async fn post_net_publication(
+pub async fn post_new_publication(
     base_url: &str,
     token: &str,
     content: String,
