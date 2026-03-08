@@ -12,6 +12,10 @@ run = "cargo run --bin relay"
 description = "Run the uplink client"
 run = "cargo run --bin uplink"
 
+[tasks.clippy]
+description = "Run cargo clippy with auto-reload on changes (via bacon)"
+run = "bacon clippy"
+
 [tasks.watch]
 description = "Run the relay server with auto-reload on changes (via bacon)"
 run = "bacon run-long"
