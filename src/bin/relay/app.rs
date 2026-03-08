@@ -77,15 +77,22 @@ async fn post_publication(
     Json(new_publication): Json<NewPublicationRequest>,
 ) -> axum::response::Result<(StatusCode, Json<NewPublicationResponse>), AppError> {
     let mut new_publication: Publication = new_publication.into();
-    let mastodon_response = mastodon::MastodonClient::new(
+    match mastodon::MastodonClient::new(
         state.mastodon_instance_url.clone(),
         state.mastodon_access_token.clone(),
     )
     .post(new_publication.content().to_owned())
     .await
-    .context("post publication to Mastodon")?;
-    new_publication.set_mastodon_id(mastodon_response.id);
-    new_publication.set_mastodon_url(mastodon_response.url);
+    {
+        Ok(mastodon_response) => {
+            new_publication.set_mastodon_id(mastodon_response.id);
+            new_publication.set_mastodon_url(mastodon_response.url);
+        }
+        Err(error) => {
+            tracing::error!(error = %format_args!("{:#}", error), "failed to post to Mastodon");
+        }
+    }
+
     state
         .storage
         .insert_publication(&new_publication)

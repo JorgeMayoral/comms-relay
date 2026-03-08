@@ -16,6 +16,7 @@ impl MastodonClient {
         }
     }
 
+    #[tracing::instrument(skip(self), err)]
     pub async fn post(&self, content: String) -> Result<MastodonStatus> {
         let idempotency_key = Ulid::new();
         let url = format!("{}/api/v1/statuses", self.instance_url);
@@ -31,7 +32,10 @@ impl MastodonClient {
             .context("send request to Mastodon")?
             .error_for_status()
             .context("post status to Mastodon")?;
-        let data: MastodonStatus = response.json().await.context("deserialize Mastodon response")?;
+        let data: MastodonStatus = response
+            .json()
+            .await
+            .context("deserialize Mastodon response")?;
         Ok(data)
     }
 }
