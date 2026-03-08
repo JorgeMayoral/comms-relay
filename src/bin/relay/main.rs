@@ -6,6 +6,7 @@ use crate::app::AppState;
 
 mod app;
 mod auth;
+mod bluesky;
 mod error;
 mod mastodon;
 mod storage;
@@ -19,16 +20,30 @@ async fn main() -> Result<()> {
     let api_token = std::env::var("RELAY_API_TOKEN").context("get RELAY_API_TOKEN env variable")?;
     let mastodon_access_token =
         std::env::var("MASTODON_ACCESS_TOKEN").context("get MASTODON_ACCESS_TOKEN env variable")?;
-    let mastodon_instance_url = std::env::var("MASTODON_INSTANCE_URL")
-        .context("get MASTODON_INSTANCE_URL env variable")?;
+    let mastodon_instance_url =
+        std::env::var("MASTODON_INSTANCE_URL").context("get MASTODON_INSTANCE_URL env variable")?;
+    let bluesky_instance_url =
+        std::env::var("BLUESKY_INSTANCE_URL").context("get BLUESKY_INSTANCE_URL env variable")?;
+    let bluesky_identifier =
+        std::env::var("BLUESKY_IDENTIFIER").context("get BLUESKY_IDENTIFIER env variable")?;
+    let bluesky_app_password =
+        std::env::var("BLUESKY_APP_PASSWORD").context("get BLUESKY_APP_PASSWORD env variable")?;
 
     let addr = SocketAddr::from(([0, 0, 0, 0], 8000));
     let listener = tokio::net::TcpListener::bind(addr)
         .await
         .context("create TCP listener")?;
-    let state = AppState::new(&db_url, api_token, mastodon_access_token, mastodon_instance_url)
-        .await
-        .context("create app state")?;
+    let state = AppState::new(
+        &db_url,
+        api_token,
+        mastodon_access_token,
+        mastodon_instance_url,
+        bluesky_instance_url,
+        bluesky_identifier,
+        bluesky_app_password,
+    )
+    .await
+    .context("create app state")?;
     let app = app::app(state);
     tracing::info!("Server listening on http://{addr}");
     axum::serve(listener, app).await.context("serve axum app")?;

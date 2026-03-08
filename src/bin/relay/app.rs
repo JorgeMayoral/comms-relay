@@ -17,13 +17,16 @@ use comms::{
 };
 use ulid::Ulid;
 
-use crate::{auth::BearerAuth, error::AppError, mastodon, storage::PgStorage, telemetry};
+use crate::{auth::BearerAuth, bluesky, error::AppError, mastodon, storage::PgStorage, telemetry};
 
 pub(crate) struct AppState {
     pub(crate) storage: PgStorage,
     pub(crate) api_token: String,
     pub(crate) mastodon_access_token: String,
     pub(crate) mastodon_instance_url: String,
+    pub(crate) bluesky_instance_url: String,
+    pub(crate) bluesky_identifier: String,
+    pub(crate) bluesky_app_password: String,
 }
 
 impl AppState {
@@ -32,6 +35,9 @@ impl AppState {
         api_token: String,
         mastodon_access_token: String,
         mastodon_instance_url: String,
+        bluesky_instance_url: String,
+        bluesky_identifier: String,
+        bluesky_app_password: String,
     ) -> Result<Self> {
         let storage = PgStorage::create(db_url)
             .await
@@ -41,6 +47,9 @@ impl AppState {
             api_token,
             mastodon_access_token,
             mastodon_instance_url,
+            bluesky_instance_url,
+            bluesky_identifier,
+            bluesky_app_password,
         })
     }
 }
@@ -90,6 +99,23 @@ async fn post_publication(
         }
         Err(error) => {
             tracing::error!(error = %format_args!("{:#}", error), "failed to post to Mastodon");
+        }
+    }
+
+    match bluesky::BlueskyClient::new(
+        state.bluesky_instance_url.clone(),
+        state.bluesky_identifier.clone(),
+        state.bluesky_app_password.clone(),
+    )
+    .post(new_publication.content().to_owned())
+    .await
+    {
+        Ok(bluesky_response) => {
+            new_publication.set_bluesky_id(bluesky_response.uri);
+            new_publication.set_bluesky_url(bluesky_response.url);
+        }
+        Err(error) => {
+            tracing::error!(error = %format_args!("{:#}", error), "failed to post to Bluesky");
         }
     }
 

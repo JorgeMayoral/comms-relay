@@ -42,10 +42,9 @@ impl ConfigArgs {
             "{url_label} {}",
             url_val.if_supports_color(Stream::Stdout, |t| t.style(url_style))
         );
-        let token_preview = config
-            .token
-            .as_deref()
-            .map_or("(not set)".to_owned(), |t| format!("{}…", &t[..t.len().min(4)]));
+        let token_preview = config.token.as_deref().map_or("(not set)".to_owned(), |t| {
+            format!("{}…", &t[..t.len().min(4)])
+        });
         let token_label = "  token:".if_supports_color(Stream::Stdout, |t| t.dimmed());
         let token_style = if config.token.is_some() {
             Style::new().bold()
