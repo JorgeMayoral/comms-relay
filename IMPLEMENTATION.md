@@ -51,6 +51,12 @@ CREATE TABLE publications (
 
 The ULID is stored as `TEXT`. Timestamps are stored as `TIMESTAMPTZ`.
 
+A second migration (`20260310144257_add_publication_date_index.sql`) adds an index on `pub_date DESC` to support efficient ordering in list queries:
+
+```sql
+CREATE INDEX publications_pub_date_desc_idx ON publications (pub_date DESC);
+```
+
 ---
 
 ## Relay internals
@@ -82,7 +88,7 @@ Both clients are instantiated in `AppState` from the environment variables loade
 
 ### Storage and PgZoned
 
-`src/bin/relay/storage.rs` wraps a `sqlx::PgPool`. All queries use `sqlx::query!()` macros, which are checked against the live database schema at compile time. Public methods: `create`, `insert_publication`, `get_publication`, `list_publications`, and `delete_publication`. `delete_publication` returns `Result<bool>` (`true` if a row was deleted, `false` if the ID was not found).
+`src/bin/relay/storage.rs` wraps a `sqlx::PgPool`. All queries use `sqlx::query!()` macros, which are checked against the live database schema at compile time. Public methods: `create`, `insert_publication`, `get_publication`, `list_publications`, `count_publications`, and `delete_publication`. `delete_publication` returns `Result<bool>` (`true` if a row was deleted, `false` if the ID was not found). `count_publications` returns the total number of publications and is called alongside `list_publications` to populate pagination metadata in the response.
 
 `jiff::Zoned` has no native sqlx codec, so `PgZoned` is a newtype that implements `sqlx::Encode` and `sqlx::Decode` by converting to/from a microsecond-precision Unix timestamp, the representation Postgres uses internally for `TIMESTAMPTZ`.
 
@@ -135,11 +141,12 @@ The config file path is resolved via the `directories` crate (`ProjectDirs::from
 
 ### Display module
 
-`display.rs` provides three functions called by the subcommands:
+`display.rs` provides functions called by the subcommands:
 
 | Function | Used by |
 |---|---|
 | `print_publications` | `list` |
+| `print_pagination_footer` | `list` |
 | `print_publication` | `get` |
 | `print_publish_success` | `publish` |
 | `print_delete_success` | `delete` |

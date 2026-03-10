@@ -107,11 +107,16 @@ Published · 2026/03/07 - 14:32 (UTC)
 
 ### `uplink list`
 
-List all publications, newest first.
+List publications, newest first. Results are paginated.
 
 ```
-uplink list [--json]
+uplink list [--page <N>] [--per-page <N>] [--json]
 ```
+
+| Flag | Default | Description |
+|---|---|---|
+| `--page <N>` | `1` | Page number to fetch (1-indexed) |
+| `--per-page <N>` | `100` | Number of results per page (max 500) |
 
 **Output:**
 
@@ -121,6 +126,8 @@ uplink list [--json]
 
 01JNXK1ABCDEFGHIJKLMNOPQRS · 2026/03/06 - 09:10 (UTC)
   An earlier publication
+
+Page 1 of 1 · 2 publications total
 ```
 
 ### `uplink get`
@@ -195,11 +202,39 @@ Create a new publication.
 
 ### `GET /publications`
 
-List all publications ordered by date, newest first.
+List publications ordered by date, newest first. Results are paginated.
 
 **Auth required:** no
 
-**Response** `200 OK`: array of publication objects (same shape as above).
+**Query parameters:**
+
+| Parameter | Default | Constraints | Description |
+|---|---|---|---|
+| `page` | `1` | integer >= 1 | Page number (1-indexed) |
+| `per_page` | `100` | integer 1–500 | Results per page |
+
+**Response** `200 OK`:
+```json
+{
+  "publications": [
+    {
+      "id": "01JNXK2ABCDEFGHIJKLMNOPQRS",
+      "content": "Hello from the API!",
+      "pub_date": "2026-03-07T16:35:03.970665956+00:00[UTC]",
+      "mastodon_id": null,
+      "mastodon_url": null,
+      "bluesky_id": null,
+      "bluesky_url": null
+    }
+  ],
+  "page": 1,
+  "per_page": 100,
+  "total_results": 1,
+  "total_pages": 1
+}
+```
+
+**Response** `422 Unprocessable Entity`: returned when `page < 1` or `per_page` is outside the range `[1, 500]`.
 
 ### `GET /publications/{id}`
 
