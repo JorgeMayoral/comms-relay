@@ -1,6 +1,6 @@
 {
   "db_name": "PostgreSQL",
-  "query": "SELECT id, content, pub_date as \"pub_date: PgZoned\",\n               mastodon_id, mastodon_url, bluesky_id, bluesky_url\n               FROM publications ORDER BY pub_date DESC",
+  "query": "SELECT id, content, pub_date as \"pub_date: PgZoned\",\n               mastodon_id, mastodon_url, bluesky_id, bluesky_url\n               FROM publications ORDER BY pub_date DESC\n               LIMIT $1 OFFSET $2",
   "describe": {
     "columns": [
       {
@@ -40,7 +40,10 @@
       }
     ],
     "parameters": {
-      "Left": []
+      "Left": [
+        "Int8",
+        "Int8"
+      ]
     },
     "nullable": [
       false,
@@ -52,5 +55,5 @@
       true
     ]
   },
-  "hash": "fc99b3fe3f17739902733e6ceb4b8ad3e1bd11aec9a20cedd31eaf37b417e634"
+  "hash": "41355f975a1d8dd122896f8d0c2d6360bf4e455a31369ddef32e19b9a47cb35b"
 }

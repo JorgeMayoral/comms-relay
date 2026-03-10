@@ -22,9 +22,21 @@ pub async fn get_publication_by_id(base_url: &str, id: &Ulid) -> Result<Publicat
     Ok(data.inner())
 }
 
-pub async fn get_all_publications(base_url: &str) -> Result<Vec<Publication>> {
-    let url = format!("{base_url}/publications");
-    let response = reqwest::get(&url)
+pub async fn get_all_publications(
+    base_url: &str,
+    page: i64,
+    per_page: i64,
+) -> Result<GetAllPublicationsResponse> {
+    let base_url = format!("{base_url}/publications");
+    let url = reqwest::Url::parse_with_params(
+        &base_url,
+        &[
+            ("page", page.to_string()),
+            ("per_page", per_page.to_string()),
+        ],
+    )
+    .context("build paginated list url")?;
+    let response = reqwest::get(url)
         .await
         .context("send GET /publications to relay")?;
     let data = response
@@ -33,7 +45,7 @@ pub async fn get_all_publications(base_url: &str) -> Result<Vec<Publication>> {
         .json::<GetAllPublicationsResponse>()
         .await
         .context("deserialize publications list response")?;
-    Ok(data.inner())
+    Ok(data)
 }
 
 pub async fn post_new_publication(

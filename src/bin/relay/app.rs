@@ -3,7 +3,7 @@ use std::sync::Arc;
 use anyhow::{Context, Result};
 use axum::{
     Json, Router,
-    extract::{Path, State},
+    extract::{Path, Query, State},
     http::StatusCode,
     response::{IntoResponse, Response},
     routing::{delete, get, post},
@@ -15,6 +15,7 @@ use comms::{
     },
     publication::Publication,
 };
+use serde::Deserialize;
 use ulid::Ulid;
 
 use crate::{
@@ -80,18 +81,41 @@ pub fn app(state: AppState) -> Router {
         .layer(tracing_layer)
 }
 
+#[derive(Debug, Deserialize)]
+struct Pagination {
+    page: Option<i64>,
+    per_page: Option<i64>,
+}
+
 async fn list_publications(
     State(state): State<Arc<AppState>>,
+    Query(Pagination { page, per_page }): Query<Pagination>,
 ) -> axum::response::Result<(StatusCode, Json<GetAllPublicationsResponse>), AppError> {
+    let page = page.unwrap_or(1);
+    let per_page = per_page.unwrap_or(100);
+    if page < 1 {
+        return Err(AppError::Unprocessable("`page` must be >= 1".into()));
+    }
+    if !(1..=500).contains(&per_page) {
+        return Err(AppError::Unprocessable(
+            "`per_page` must be between 1 and 500".into(),
+        ));
+    }
+    let offset = per_page * (page - 1);
     let publications = state
         .storage
-        .list_publications()
+        .list_publications(per_page, offset)
         .await
         .context("list all publications from db")?;
-    Ok((
-        StatusCode::OK,
-        Json(GetAllPublicationsResponse::from(publications)),
-    ))
+    let total_results = state
+        .storage
+        .count_publications()
+        .await
+        .context("count publications")?;
+    let total_pages = (total_results + per_page - 1) / per_page;
+    let response =
+        GetAllPublicationsResponse::new(publications, page, per_page, total_results, total_pages);
+    Ok((StatusCode::OK, Json(response)))
 }
 
 async fn post_publication(

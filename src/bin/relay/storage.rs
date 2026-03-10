@@ -75,11 +75,14 @@ impl PgStorage {
     }
 
     #[tracing::instrument(skip(self), err)]
-    pub async fn list_publications(&self) -> Result<Vec<Publication>> {
+    pub async fn list_publications(&self, results: i64, offset: i64) -> Result<Vec<Publication>> {
         let rows = sqlx::query!(
             r#"SELECT id, content, pub_date as "pub_date: PgZoned",
                mastodon_id, mastodon_url, bluesky_id, bluesky_url
-               FROM publications ORDER BY pub_date DESC"#,
+               FROM publications ORDER BY pub_date DESC
+               LIMIT $1 OFFSET $2"#,
+            results,
+            offset,
         )
         .fetch_all(&self.0)
         .await
@@ -100,6 +103,15 @@ impl PgStorage {
                 )
             })
             .collect())
+    }
+
+    #[tracing::instrument(skip(self), err)]
+    pub async fn count_publications(&self) -> Result<i64> {
+        let row = sqlx::query!("SELECT COUNT(*) as count FROM publications")
+            .fetch_one(&self.0)
+            .await
+            .context("count publications")?;
+        Ok(row.count.unwrap_or(0))
     }
 
     #[tracing::instrument(skip(self), err)]

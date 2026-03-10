@@ -19,6 +19,14 @@ pub fn print_publications(publications: &[Publication]) {
     }
 }
 
+pub fn print_pagination_footer(page: i64, total_pages: i64, total_results: i64) {
+    let footer = format!("Page {page} of {total_pages} · {total_results} publications total");
+    println!(
+        "\n{}",
+        footer.if_supports_color(Stream::Stdout, |t| t.dimmed())
+    );
+}
+
 pub fn print_publication(publication: &Publication) {
     print_header(publication);
     for line in publication.content().lines() {
