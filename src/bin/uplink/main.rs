@@ -7,6 +7,7 @@ mod actions;
 mod cli;
 mod config;
 mod display;
+mod tui;
 
 #[tokio::main]
 async fn main() -> Result<()> {
