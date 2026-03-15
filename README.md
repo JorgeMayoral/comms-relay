@@ -21,6 +21,7 @@ For implementation details, see [IMPLEMENTATION.md](IMPLEMENTATION.md).
 - [Rust](https://rustup.rs/) (edition 2024)
 - [Docker](https://docs.docker.com/get-docker/) (for the local Postgres instance)
 - [mise](https://mise.jdx.dev/) (task runner and env management, optional but recommended)
+- [Nix](https://nixos.org/) (alternative to Rust + mise)
 
 ---
 
@@ -55,6 +56,73 @@ Settings are saved to `~/.config/uplink/config.toml` and used automatically by s
 
 ```sh
 uplink publish "Hello from Comms Relay!"
+```
+
+---
+
+## Development with Nix
+
+If you prefer Nix, a flake is provided with a dev shell and the `uplink` package.
+
+### Enter the dev shell
+
+```sh
+# With direnv (recommended)
+direnv allow
+
+# Or manually
+nix develop
+```
+
+The dev shell includes: Rust toolchain, clippy, rustfmt, sqlx-cli, bacon, and a PostgreSQL client.
+
+### Install uplink
+
+```sh
+# Run directly without installing
+nix run github:jorgemayoral/comms-relay -- --help
+
+# Install to user profile
+nix profile install github:jorgemayoral/comms-relay
+
+# Or build locally
+nix build
+./result/bin/uplink --help
+```
+
+### NixOS / Home Manager
+
+Add the flake input and apply the overlay to use `pkgs.uplink`:
+
+```nix
+# flake.nix
+{
+  inputs.comms-relay.url = "github:jorgemayoral/comms-relay";
+
+  outputs = { self, nixpkgs, comms-relay, ... }: {
+    nixosConfigurations.myhost = nixpkgs.lib.nixosSystem {
+      system = "x86_64-linux";
+      modules = [{
+        nixpkgs.overlays = [ comms-relay.overlays.default ];
+        environment.systemPackages = with pkgs; [ uplink ];
+      }];
+    };
+  };
+}
+```
+
+Or with Home Manager:
+
+```nix
+homeConfigurations.myuser = home-manager.lib.homeManagerConfiguration {
+  pkgs = import nixpkgs {
+    system = "x86_64-linux";
+    overlays = [ comms-relay.overlays.default ];
+  };
+  modules = [{
+    home.packages = with pkgs; [ uplink ];
+  }];
+};
 ```
 
 ---
