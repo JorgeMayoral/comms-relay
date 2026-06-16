@@ -74,7 +74,7 @@ direnv allow
 nix develop
 ```
 
-The dev shell includes: Rust toolchain, clippy, rustfmt, sqlx-cli, bacon, and a PostgreSQL client.
+The dev shell includes: Rust toolchain, clippy, rustfmt, sqlx-cli, bacon, a PostgreSQL client, and mise (so all `mise run <task>` commands work inside the shell).
 
 ### Install uplink
 
