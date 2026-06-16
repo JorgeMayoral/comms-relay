@@ -100,6 +100,7 @@
             sqlx-cli
             bacon
             pgcli
+            mise
           ];
 
           SQLX_OFFLINE = "true";

@@ -6,6 +6,7 @@ use crate::{
         config::ConfigArgs, delete::DeleteArgs, get::GetArgs, list::ListArgs, publish::PublishArgs,
     },
     config::AppConfig,
+    tui,
 };
 
 mod config;
@@ -30,7 +31,7 @@ pub struct Cli {
     json: bool,
 
     #[command(subcommand)]
-    command: Command,
+    command: Option<Command>,
 }
 
 impl Cli {
@@ -43,7 +44,11 @@ impl Cli {
             .unwrap_or("http://localhost:8000");
         let token = self.token.as_deref().or(file_config.token.as_deref());
 
-        match &self.command {
+        let Some(command) = &self.command else {
+            ratatui::run(|terminal| tui::App::default().run(terminal))?;
+            return Ok(());
+        };
+        match &command {
             Command::Config(args) => {
                 args.exec().context("execute config command")?;
             }
